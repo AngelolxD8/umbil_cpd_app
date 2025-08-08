@@ -45,7 +45,7 @@ if query:
     # --- Reflection input ---
     reflection = st.text_area("Add a short reflection (optional)", placeholder="e.g. Saw this in clinic today...")
 
-tags = st.text_input("Add tags (comma-separated)", placeholder="e.g. gynae, hormones, fertility")
+    tags = st.text_input("Add tags (comma-separated)", placeholder="e.g. gynae, hormones, fertility")
 
     if st.button("Log this as CPD"):
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -53,10 +53,11 @@ tags = st.text_input("Add tags (comma-separated)", placeholder="e.g. gynae, horm
             "Timestamp": timestamp,
             "Query": query,
             "Response": response,
-            "Reflection": reflection
+            "Reflection": reflection,
             "Tags": [t.strip().lower() for t in tags.split(',')] if tags else []
         })
         st.success("✅ Logged to CPD!")
+
 
 # --- CPD Log Display ---
 if st.session_state.cpd_log:
