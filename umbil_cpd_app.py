@@ -8,7 +8,7 @@ from collections import Counter
 
 # --- ENV LOADING ---
 load_dotenv()
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Umbil – Clinical CPD Assistant", layout="centered")
@@ -24,34 +24,45 @@ if "pdp_goals" not in st.session_state:
 st.title("🧠 Umbil – Clinical CPD Assistant")
 st.markdown("Ask a clinical question, get a concise summary, and log it as CPD.")
 
+# --- Function to get AI Response ---
+def get_openrouter_response(query):
+    url = "https://openrouter.ai/api/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "https://umbil.com",  # or your dev domain
+        "X-Title": "UmbilCPD"
+    }
+    payload = {
+        "model": "x-ai/grok-2-mini",
+        "messages": [
+            {
+                "role": "system",
+                "content": "You are a clinical assistant for UK doctors. Use NICE, CKS, SIGN, and BNF to answer clinical questions clearly and accurately."
+            },
+            {"role": "user", "content": query}
+        ]
+    }
+    try:
+        response = requests.post(url, headers=headers, json=payload)
+        if response.status_code == 200:
+            return response.json()["choices"][0]["message"]["content"]
+        else:
+            return f"⚠️ Error: {response.status_code} - {response.text}"
+    except Exception as e:
+        return f"⚠️ Request failed: {str(e)}"
+
 # --- INPUT ---
 query = st.text_input("Enter your clinical question", placeholder="e.g. What does a high FSH mean in a 42-year-old woman?")
 
 if query:
-    # --- GEMINI API CALL ---
-    if GEMINI_API_KEY:
-        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
-        headers = {"Content-Type": "application/json"}
-        params = {"key": GEMINI_API_KEY}
-        data = {
-            "contents": [
-                {
-                    "parts": [{"text": f"You're a clinical assistant for UK doctors. Use NICE, CKS, SIGN, and BNF to answer this clearly:\n\n{query}"}]
-                }
-            ]
-        }
-
-        try:
-            response = requests.post(url, headers=headers, params=params, json=data)
-            gemini_text = response.json()['candidates'][0]['content']['parts'][0]['text']
-        except Exception as e:
-            gemini_text = "⚠️ Error from Gemini API. Please check your API key or try again later."
+    if OPENROUTER_API_KEY:
+        ai_response = get_openrouter_response(query)
     else:
-        gemini_text = f"📘 This is a placeholder response for your question:\n\n**{query}**\n\n(Real AI output would appear here once API is connected.)"
+        ai_response = f"📘 This is a placeholder response for your question:\n\n**{query}**\n\n(Real AI output would appear here once API is connected.)"
 
-    # --- DISPLAY RESPONSE ---
     st.subheader("AI Response:")
-    st.code(gemini_text, language="markdown")
+    st.code(ai_response, language="markdown")
 
     # --- Reflection & Tags ---
     reflection = st.text_area("Add a short reflection (optional)", placeholder="e.g. Saw this in clinic today...")
@@ -62,7 +73,7 @@ if query:
         st.session_state.cpd_log.append({
             "Timestamp": timestamp,
             "Query": query,
-            "Response": gemini_text,
+            "Response": ai_response,
             "Reflection": reflection,
             "Tags": [t.strip().lower() for t in tags.split(',')] if tags else []
         })
