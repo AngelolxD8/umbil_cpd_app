@@ -47,16 +47,16 @@ if query:
 
 tags = st.text_input("Add tags (comma-separated)", placeholder="e.g. gynae, hormones, fertility")
 
-if st.button("Log this as CPD"):
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    st.session_state.cpd_log.append({
-        "Timestamp": timestamp,
-        "Query": query,
-        "Response": response,
-        "Reflection": reflection
-        "Tags": [t.strip().lower() for t in tags.split(',')] if tags else []
-    })
-    st.success("✅ Logged to CPD!")
+    if st.button("Log this as CPD"):
+        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        st.session_state.cpd_log.append({
+            "Timestamp": timestamp,
+            "Query": query,
+            "Response": response,
+            "Reflection": reflection
+            "Tags": [t.strip().lower() for t in tags.split(',')] if tags else []
+        })
+        st.success("✅ Logged to CPD!")
 
 # --- CPD Log Display ---
 if st.session_state.cpd_log:
