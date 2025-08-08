@@ -1,18 +1,10 @@
 import streamlit as st
 from datetime import datetime
 import pandas as pd
-import os
-import requests
 from collections import Counter
 
 # --- PAGE CONFIG ---
-st.set_page_config(page_title="Umbil – Clinical CPD Assistant", layout="centered")
-
-# --- API KEY FROM ENV (no .env needed) ---
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
-
-# Debug line - shows if key is loaded (remove after testing)
-st.write("🔑 OpenRouter API Key Found:", OPENROUTER_API_KEY is not None)
+st.set_page_config(page_title="Umbil – Clinical CPD Assistant", layout="wide")
 
 # --- SESSION STATE ---
 if "cpd_log" not in st.session_state:
@@ -21,108 +13,112 @@ if "cpd_log" not in st.session_state:
 if "pdp_goals" not in st.session_state:
     st.session_state.pdp_goals = []
 
-# --- UI HEADER ---
-st.title("🧠 Umbil – Clinical CPD Assistant")
-st.markdown("Ask a clinical question, get a concise summary, and log it as CPD.")
-
-# --- Function to get AI Response ---
-def get_openrouter_response(query):
-    url = "https://openrouter.ai/api/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY}",
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://umbiltest.streamlit.app/",  # replace with your domain later
-        "X-Title": "UmbilCPD"
+# --- TOP BAR ---
+st.markdown("""
+<style>
+    .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 1.1em;
+        padding: 0.5rem 1rem;
+        border-bottom: 1px solid #e6e6e6;
+        background-color: white;
+        position: sticky;
+        top: 0;
+        z-index: 100;
     }
-    payload = {
-        "model": "mistralai/mixtral-8x7b-instruct",
-        "messages": [
-            {
-                "role": "system",
-                "content": (
-                    "You are a clinical assistant for UK doctors. "
-                    "Use NICE, CKS, SIGN, and BNF to answer clinical questions clearly and accurately."
-                )
-            },
-            {"role": "user", "content": query}
-        ]
+    .top-bar a {
+        margin-left: 20px;
+        text-decoration: none;
+        color: #444;
     }
-    try:
-        response = requests.post(url, headers=headers, json=payload)
-        if response.status_code == 200:
-            return response.json()["choices"][0]["message"]["content"]
-        else:
-            return f"⚠️ Error: {response.status_code} - {response.text}"
-    except Exception as e:
-        return f"⚠️ Request failed: {str(e)}"
+    .top-bar a:hover {
+        text-decoration: underline;
+    }
+</style>
+<div class="top-bar">
+    <div><strong>U</strong> Umbil</div>
+    <div>
+        <a href="#">CPD Log</a>
+        <a href="#">PDP Goals</a>
+        <a href="#">Settings</a>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
-# --- INPUT ---
-query = st.text_input(
-    "Enter your clinical question",
-    placeholder="e.g. What does a high FSH mean in a 42-year-old woman?"
-)
+# --- LAYOUT ---
+col_left, col_right = st.columns([2, 1])
 
-if query:
-    if OPENROUTER_API_KEY:
-        ai_response = get_openrouter_response(query)
-    else:
-        ai_response = (
-            f"📘 This is a placeholder response for your question:\n\n**{query}**\n\n"
-            "(Real AI output would appear here once API is connected.)"
-        )
+with col_left:
+    st.header("Ask Umbil anything")
+    query = st.text_input("Enter a question or topic...", label_visibility="collapsed")
 
-    st.subheader("AI Response:")
-    st.code(ai_response, language="markdown")
+    if query:
+        # --- MOCKED RESPONSE (replace with API call if needed) ---
+        ai_response = f"""
+        **Polycystic ovary syndrome (PCOS)**
 
-    # --- Reflection & Tags ---
-    reflection = st.text_area("Add a short reflection (optional)", placeholder="e.g. Saw this in clinic today...")
-    tags = st.text_input("Add tags (comma-separated)", placeholder="e.g. gynae, hormones, fertility")
+        PCOS is a common endocrine disorder involving irregular or absent menstrual cycles, hyperandrogenism, and polycystic ovaries on ultrasound.
+        Diagnostic criteria include two of these, after excluding other causes. Management strategies include:
 
-    if st.button("Log this as CPD"):
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        st.session_state.cpd_log.append({
-            "Timestamp": timestamp,
-            "Query": query,
-            "Response": ai_response,
-            "Reflection": reflection,
-            "Tags": [t.strip().lower() for t in tags.split(',')] if tags else []
-        })
-        st.success("✅ Logged to CPD!")
+        - Lifestyle modifications: weight control, exercise
+        - Pharmacological: combined oral contraceptives, metformin for insulin resistance
+        - Fertility treatments: clomifene citrate, letrozole
 
-    # --- PDP Suggestions ---
-    all_tags = [tag for entry in st.session_state.cpd_log for tag in entry.get("Tags", [])]
-    tag_counts = Counter(all_tags)
+        Consult NICE/CKS guidance for details.
+        """
+        st.markdown(ai_response)
 
-    for tag, count in tag_counts.items():
-        if count == 3:
-            if st.button(f"✅ Add '{tag}' as a PDP goal"):
-                st.session_state.pdp_goals.append({
-                    "Topic": tag,
-                    "Created": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                })
-                st.success(f"🎯 PDP goal added: **{tag}**")
+        # --- Reflection ---
+        reflection = st.text_area("Reflection", placeholder="Reviewed NICE/CKS guidance on PCOS")
 
-# --- CPD LOG DISPLAY ---
-if st.session_state.cpd_log:
-    st.markdown("---")
-    st.subheader("🗂️ My CPD Log")
+        # --- Tags ---
+        tags = st.text_input("Tags (comma-separated)", placeholder="PCOS, fertility, hormones")
 
-    df = pd.DataFrame(st.session_state.cpd_log)
-    df['Tags'] = df['Tags'].apply(
-        lambda x: ' | '.join([f'🏷️ {t}' for t in x]) if isinstance(x, list) else ''
-    )
-    st.dataframe(df)
+        # --- Log CPD Entry ---
+        if st.button("Log CPD entry"):
+            timestamp = datetime.now().strftime("%d %b %Y %I:%M %p")
+            st.session_state.cpd_log.append({
+                "Timestamp": timestamp,
+                "Query": query,
+                "Response": ai_response,
+                "Reflection": reflection,
+                "Tags": [t.strip().lower() for t in tags.split(',')] if tags else []
+            })
+            st.success("✅ Entry logged!")
 
-    csv = df.to_csv(index=False).encode('utf-8')
-    st.download_button("📥 Download CPD Log (CSV)", data=csv, file_name="umbil_cpd_log.csv", mime="text/csv")
+with col_right:
+    st.subheader("CPD Log")
+    if st.session_state.cpd_log:
+        last_entry = st.session_state.cpd_log[-1]
+        st.markdown(f"**{last_entry['Timestamp']}**")
+        for tag in last_entry['Tags']:
+            st.markdown(f"`{tag}`")
+        if last_entry["Reflection"]:
+            st.write("Reflection")
+            st.write(last_entry["Reflection"])
 
-# --- PDP GOALS DISPLAY ---
-if st.session_state.pdp_goals:
-    st.markdown("---")
-    st.subheader("🎯 My PDP Goals")
+        # --- PDP Suggestion ---
+        all_tags = [tag for entry in st.session_state.cpd_log for tag in entry.get("Tags", [])]
+        tag_counts = Counter(all_tags)
+        for tag, count in tag_counts.items():
+            if count >= 3:
+                st.info(f"You've logged several entries about **{tag}**. Add as PDP goal?")
+                if st.button(f"Add '{tag}' as PDP goal"):
+                    st.session_state.pdp_goals.append({
+                        "Topic": tag,
+                        "Created": datetime.now().strftime("%d %b %Y %I:%M %p")
+                    })
+                    st.success(f"🎯 PDP goal added: {tag}")
 
-    pdp_df = pd.DataFrame(st.session_state.pdp_goals)
-    st.table(pdp_df)
+    # --- PDP GOALS ---
+    if st.session_state.pdp_goals:
+        st.markdown("### PDP Goals")
+        pdp_df = pd.DataFrame(st.session_state.pdp_goals)
+        st.table(pdp_df)
 
-    pdp_csv = pdp_df.to_csv(index=False).encode('utf-8')
-    st.download_button("📥 Download PDP Goals (CSV)", data=pdp_csv, file_name="umbil_pdp_goals.csv", mime="text/csv")
+    # --- DOWNLOAD ---
+    if st.session_state.cpd_log:
+        csv = pd.DataFrame(st.session_state.cpd_log).to_csv(index=False).encode('utf-8')
+        st.download_button("📥 Download CPD Log (CSV)", data=csv, file_name="umbil_cpd_log.csv", mime="text/csv")
