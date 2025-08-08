@@ -3,122 +3,113 @@ from datetime import datetime
 import pandas as pd
 from collections import Counter
 
-# --- PAGE CONFIG ---
+# ------------------ PAGE CONFIG ------------------
 st.set_page_config(page_title="Umbil – Clinical CPD Assistant", layout="wide")
 
-# --- SESSION STATE ---
+# ------------------ SESSION STATE ------------------
 if "cpd_log" not in st.session_state:
     st.session_state.cpd_log = []
 
 if "pdp_goals" not in st.session_state:
     st.session_state.pdp_goals = []
 
-# --- TOP BAR ---
-st.markdown("""
-<style>
-    .top-bar {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        font-size: 1.1em;
-        padding: 0.5rem 1rem;
-        border-bottom: 1px solid #e6e6e6;
-        background-color: white;
-        position: sticky;
-        top: 0;
-        z-index: 100;
-    }
-    .top-bar a {
-        margin-left: 20px;
-        text-decoration: none;
-        color: #444;
-    }
-    .top-bar a:hover {
-        text-decoration: underline;
-    }
-</style>
-<div class="top-bar">
-    <div><strong>U</strong> Umbil</div>
-    <div>
-        <a href="#">CPD Log</a>
-        <a href="#">PDP Goals</a>
-        <a href="#">Settings</a>
-    </div>
-</div>
-""", unsafe_allow_html=True)
+if "page" not in st.session_state:
+    st.session_state.page = "Home"  # Default page
 
-# --- LAYOUT ---
-col_left, col_right = st.columns([2, 1])
+# ------------------ NAVIGATION BAR ------------------
+col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
+with col1:
+    st.markdown("### **U Umbil**")
+with col2:
+    if st.button("CPD Log"):
+        st.session_state.page = "CPD Log"
+with col3:
+    if st.button("PDP Goals"):
+        st.session_state.page = "PDP Goals"
+with col4:
+    if st.button("Settings"):
+        st.session_state.page = "Settings"
 
-with col_left:
-    st.header("Ask Umbil anything")
-    query = st.text_input("Enter a question or topic...", label_visibility="collapsed")
+st.markdown("---")
 
-    if query:
-        # --- MOCKED RESPONSE (replace with API call if needed) ---
-        ai_response = f"""
-        **Polycystic ovary syndrome (PCOS)**
+# ------------------ HOME PAGE ------------------
+if st.session_state.page == "Home":
+    left, right = st.columns([2, 1])
 
-        PCOS is a common endocrine disorder involving irregular or absent menstrual cycles, hyperandrogenism, and polycystic ovaries on ultrasound.
-        Diagnostic criteria include two of these, after excluding other causes. Management strategies include:
+    with left:
+        st.header("Ask Umbil anything")
+        query = st.text_input("Enter a question or topic...")
 
-        - Lifestyle modifications: weight control, exercise
-        - Pharmacological: combined oral contraceptives, metformin for insulin resistance
-        - Fertility treatments: clomifene citrate, letrozole
+        if query:
+            # Placeholder response (API integration disabled for now)
+            ai_response = f"📘 This is a placeholder answer for:\n\n**{query}**\n\n(Replace with real AI output later.)"
 
-        Consult NICE/CKS guidance for details.
-        """
-        st.markdown(ai_response)
+            st.subheader("AI Response")
+            st.markdown(ai_response)
 
-        # --- Reflection ---
-        reflection = st.text_area("Reflection", placeholder="Reviewed NICE/CKS guidance on PCOS")
+            reflection = st.text_area("Reflection (optional)")
+            tags = st.text_input("Tags (comma-separated)")
 
-        # --- Tags ---
-        tags = st.text_input("Tags (comma-separated)", placeholder="PCOS, fertility, hormones")
+            if st.button("Log as CPD"):
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                st.session_state.cpd_log.append({
+                    "Timestamp": timestamp,
+                    "Query": query,
+                    "Response": ai_response,
+                    "Reflection": reflection,
+                    "Tags": [t.strip().lower() for t in tags.split(',')] if tags else []
+                })
+                st.success("✅ CPD entry logged!")
 
-        # --- Log CPD Entry ---
-        if st.button("Log CPD entry"):
-            timestamp = datetime.now().strftime("%d %b %Y %I:%M %p")
-            st.session_state.cpd_log.append({
-                "Timestamp": timestamp,
-                "Query": query,
-                "Response": ai_response,
-                "Reflection": reflection,
-                "Tags": [t.strip().lower() for t in tags.split(',')] if tags else []
-            })
-            st.success("✅ Entry logged!")
+                # Suggest PDP goal if tag appears 3+ times
+                all_tags = [tag for entry in st.session_state.cpd_log for tag in entry.get("Tags", [])]
+                tag_counts = Counter(all_tags)
+                for tag, count in tag_counts.items():
+                    if count >= 3 and tag not in [goal["Topic"] for goal in st.session_state.pdp_goals]:
+                        st.info(f"You've logged several entries about **{tag}**. Add as a PDP goal?")
+                        if st.button(f"✅ Add '{tag}' as PDP goal"):
+                            st.session_state.pdp_goals.append({
+                                "Topic": tag,
+                                "Created": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                            })
+                            st.success(f"PDP goal '{tag}' added!")
 
-with col_right:
-    st.subheader("CPD Log")
+    with right:
+        st.subheader("Quick Actions")
+        st.write("📥 Download your CPD log or PDP goals anytime.")
+
+        if st.session_state.cpd_log:
+            df = pd.DataFrame(st.session_state.cpd_log)
+            csv = df.to_csv(index=False).encode('utf-8')
+            st.download_button("Download CPD Log (CSV)", data=csv, file_name="cpd_log.csv", mime="text/csv")
+
+        if st.session_state.pdp_goals:
+            pdp_df = pd.DataFrame(st.session_state.pdp_goals)
+            pdp_csv = pdp_df.to_csv(index=False).encode('utf-8')
+            st.download_button("Download PDP Goals (CSV)", data=pdp_csv, file_name="pdp_goals.csv", mime="text/csv")
+
+# ------------------ CPD LOG PAGE ------------------
+elif st.session_state.page == "CPD Log":
+    st.header("🗂️ My CPD Log")
     if st.session_state.cpd_log:
-        last_entry = st.session_state.cpd_log[-1]
-        st.markdown(f"**{last_entry['Timestamp']}**")
-        for tag in last_entry['Tags']:
-            st.markdown(f"`{tag}`")
-        if last_entry["Reflection"]:
-            st.write("Reflection")
-            st.write(last_entry["Reflection"])
+        df = pd.DataFrame(st.session_state.cpd_log)
+        df['Tags'] = df['Tags'].apply(lambda x: ' | '.join([f'🏷️ {t}' for t in x]) if isinstance(x, list) else '')
+        st.dataframe(df)
+    else:
+        st.info("No CPD entries yet.")
 
-        # --- PDP Suggestion ---
-        all_tags = [tag for entry in st.session_state.cpd_log for tag in entry.get("Tags", [])]
-        tag_counts = Counter(all_tags)
-        for tag, count in tag_counts.items():
-            if count >= 3:
-                st.info(f"You've logged several entries about **{tag}**. Add as PDP goal?")
-                if st.button(f"Add '{tag}' as PDP goal"):
-                    st.session_state.pdp_goals.append({
-                        "Topic": tag,
-                        "Created": datetime.now().strftime("%d %b %Y %I:%M %p")
-                    })
-                    st.success(f"🎯 PDP goal added: {tag}")
-
-    # --- PDP GOALS ---
+# ------------------ PDP GOALS PAGE ------------------
+elif st.session_state.page == "PDP Goals":
+    st.header("🎯 My PDP Goals")
     if st.session_state.pdp_goals:
-        st.markdown("### PDP Goals")
-        pdp_df = pd.DataFrame(st.session_state.pdp_goals)
-        st.table(pdp_df)
+        st.table(pd.DataFrame(st.session_state.pdp_goals))
+    else:
+        st.info("No PDP goals yet.")
 
-    # --- DOWNLOAD ---
-    if st.session_state.cpd_log:
-        csv = pd.DataFrame(st.session_state.cpd_log).to_csv(index=False).encode('utf-8')
-        st.download_button("📥 Download CPD Log (CSV)", data=csv, file_name="umbil_cpd_log.csv", mime="text/csv")
+# ------------------ SETTINGS PAGE ------------------
+elif st.session_state.page == "Settings":
+    st.header("⚙️ Settings")
+    st.write("Future settings can be added here.")
+    st.write("- Change API key")
+    st.write("- Export all data")
+    st.write("- Clear logs")
