@@ -16,6 +16,9 @@ st.set_page_config(page_title="Umbil – Clinical CPD Assistant", layout="center
 if "cpd_log" not in st.session_state:
     st.session_state.cpd_log = []
 
+if "pdp_goals" not in st.session_state:
+    st.session_state.pdp_goals = []
+
 # --- UI ---
 st.title("🧠 Umbil – Clinical CPD Assistant")
 st.markdown("Ask a clinical question, get a concise summary, and log it as CPD.")
@@ -66,7 +69,12 @@ if query:
     # Suggest PDP if any tag appears 3+ times
     for tag, count in tag_counts.items():
         if count == 3:
-            st.info(f"🧭 You've logged **{count}** entries about **{tag}**. Would you like to turn this into a PDP goal?")
+    if st.button(f"✅ Add '{tag}' as a PDP goal"):
+        st.session_state.pdp_goals.append({
+            "Topic": tag,
+            "Created": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        })
+        st.success(f"🎯 PDP goal added: **{tag}**")
 
 
 
@@ -83,3 +91,21 @@ if st.session_state.cpd_log:
     # --- Download option ---
     csv = df.to_csv(index=False).encode('utf-8')
     st.download_button("📥 Download CPD Log (CSV)", data=csv, file_name="umbil_cpd_log.csv", mime="text/csv")
+
+# --- PDP Goals Display ---
+if st.session_state.pdp_goals:
+    st.markdown("---")
+    st.subheader("🎯 My PDP Goals")
+
+    pdp_df = pd.DataFrame(st.session_state.pdp_goals)
+    st.table(pdp_df)
+
+    # --- PDP Download Button ---
+    pdp_csv = pdp_df.to_csv(index=False).encode('utf-8')
+    st.download_button(
+        label="📥 Download PDP Goals (CSV)",
+        data=pdp_csv,
+        file_name="umbil_pdp_goals.csv",
+        mime="text/csv"
+    )
+
