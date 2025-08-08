@@ -10,6 +10,9 @@ from collections import Counter
 load_dotenv()
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 
+# ✅ Debugging: Show whether the API key is loaded (only temporarily)
+st.write("🔑 OpenRouter API Key Found:", OPENROUTER_API_KEY is not None)
+
 # --- PAGE CONFIG ---
 st.set_page_config(page_title="Umbil – Clinical CPD Assistant", layout="centered")
 
