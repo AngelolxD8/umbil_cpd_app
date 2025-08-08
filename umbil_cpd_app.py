@@ -58,6 +58,17 @@ if query:
         })
         st.success("✅ Logged to CPD!")
 
+    # Count all tags
+    from collections import Counter
+    all_tags = [tag for entry in st.session_state.cpd_log for tag in entry.get("Tags", [])]
+    tag_counts = Counter(all_tags)
+
+    # Suggest PDP if any tag appears 3+ times
+    for tag, count in tag_counts.items():
+        if count == 3:
+            st.info(f"🧭 You've logged **{count}** entries about **{tag}**. Would you like to turn this into a PDP goal?")
+
+
 
 # --- CPD Log Display ---
 if st.session_state.cpd_log:
