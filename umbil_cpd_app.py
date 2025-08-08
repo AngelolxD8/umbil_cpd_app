@@ -19,7 +19,8 @@ if "page" not in st.session_state:
 # ------------------ NAVIGATION BAR ------------------
 col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
 with col1:
-    st.markdown("### **U Umbil**")
+    if st.button("🧠 Umbil", key="home_btn"):
+        st.session_state.page = "Home"
 with col2:
     if st.button("CPD Log"):
         st.session_state.page = "CPD Log"
@@ -31,6 +32,7 @@ with col4:
         st.session_state.page = "Settings"
 
 st.markdown("---")
+
 
 # ------------------ HOME PAGE ------------------
 if st.session_state.page == "Home":
