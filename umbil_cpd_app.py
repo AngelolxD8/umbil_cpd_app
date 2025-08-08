@@ -31,7 +31,7 @@ def get_openrouter_response(query):
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
-        "HTTP-Referer": "https://umbil.com",  # replace with your domain later
+        "HTTP-Referer": "https://umbiltest.streamlit.app/",  # replace with your domain later
         "X-Title": "UmbilCPD"
     }
     payload = {
