@@ -69,12 +69,12 @@ if query:
     # Suggest PDP if any tag appears 3+ times
     for tag, count in tag_counts.items():
         if count == 3:
-    if st.button(f"✅ Add '{tag}' as a PDP goal"):
-        st.session_state.pdp_goals.append({
-            "Topic": tag,
-            "Created": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        })
-        st.success(f"🎯 PDP goal added: **{tag}**")
+            if st.button(f"✅ Add '{tag}' as a PDP goal"):
+                st.session_state.pdp_goals.append({
+                    "Topic": tag,
+                    "Created": datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                })
+                st.success(f"🎯 PDP goal added: **{tag}**")
 
 
 
