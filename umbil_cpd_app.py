@@ -34,7 +34,7 @@ def get_openrouter_response(query):
         "X-Title": "UmbilCPD"
     }
     payload = {
-        "model": "x-ai/grok-2-mini",
+        "model": "mistralai/mixtral-8x7b-instruct",
         "messages": [
             {
                 "role": "system",
