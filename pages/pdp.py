@@ -1,28 +1,24 @@
 import streamlit as st
 import pandas as pd
-from storage import load_pdp  # this reads the CSV
+from ui import render_topbar
+from storage import load_pdp
 
-st.set_page_config(page_title="PDP Goals", layout="centered")
+st.set_page_config(page_title="PDP Goals", layout="centered", initial_sidebar_state="collapsed")
+render_topbar(active="pdp")
 
-st.write("✅ PDP Goals page loaded")  # Debug check
+st.title("PDP Goals Overview")
 
-st.title("🎯 PDP Goals Overview")
-
-# Load from session state or CSV
 if "pdp_goals" not in st.session_state:
     st.session_state.pdp_goals = load_pdp()
 
-# Show table or message
 if not st.session_state.pdp_goals:
-    st.info("No PDP goals yet. Add them from the Home page when you log CPD with repeated tags.")
+    st.info("No PDP goals yet. Add them from Home when repeated tags appear.")
 else:
-    pdp_df = pd.DataFrame(st.session_state.pdp_goals)
-    st.table(pdp_df)
-
-    pdp_csv = pdp_df.to_csv(index=False).encode('utf-8')
+    df = pd.DataFrame(st.session_state.pdp_goals)
+    st.table(df)
     st.download_button(
-        "📥 Download PDP Goals (CSV)",
-        data=pdp_csv,
+        "Download PDP Goals (CSV)",
+        data=df.to_csv(index=False).encode("utf-8"),
         file_name="umbil_pdp_goals.csv",
-        mime="text/csv"
+        mime="text/csv",
     )

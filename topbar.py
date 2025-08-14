@@ -1,6 +1,16 @@
 import streamlit as st
 
 def top_bar():
+    # Add top margin to lower the bar
+    st.markdown(
+        """
+        <style>
+            .umbil-topbar-space { margin-top: 32px; }
+        </style>
+        <div class='umbil-topbar-space'></div>
+        """,
+        unsafe_allow_html=True
+    )
     # Create a horizontal top bar
     col1, col2, col3, col4 = st.columns([4, 1, 1, 1])
 
