@@ -5,7 +5,7 @@ def top_bar():
     st.markdown(
         """
         <style>
-            .umbil-topbar-space { margin-top: 32px; }
+            .umbil-topbar-space { margin-top: 64px; }
         </style>
         <div class='umbil-topbar-space'></div>
         """,
