@@ -59,7 +59,7 @@ def render_topbar(active="home"):
 
     with col_nav:
         # 3 mini-columns inside the right-most column for the three links
-        a, b, c = st.columns([1, 1, 1], gap="small")
+        a, b, c = st.columns([0.5, 0.5, 0.5], gap="small")
         with a:
             _safe_page_link("pages/cpd.py", "CPD Log", "CPD Log🗂️")
         with b:
