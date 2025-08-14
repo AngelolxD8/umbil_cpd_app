@@ -2,22 +2,22 @@
 import base64
 import streamlit as st
 
-# tweak these if you want later
 LOGO_PATH = "assets/umbil_logo.png"
-LOGO_HEIGHT = 76  # "much bigger" – try 76–88 if you want even bigger
+LOGO_HEIGHT = 76  # change to 88+ if you want it even bigger
 
 def _logo_html(height: int = LOGO_HEIGHT) -> str:
     try:
         with open(LOGO_PATH, "rb") as f:
             b64 = base64.b64encode(f.read()).decode("utf-8")
+        # target="_self" ensures same-tab navigation
         return f'''
-        <a href="./" title="Umbil Home" style="display:inline-block;">
+        <a href="./" target="_self" title="Umbil Home" style="display:inline-block;">
             <img src="data:image/png;base64,{b64}" alt="Umbil logo"
-                 style="height:{height}px; vertical-align:middle;"/>
+                 style="height:{height}px; vertical-align:middle; cursor:pointer;"/>
         </a>
         '''
     except Exception:
-        return '<a href="./" title="Umbil Home" style="text-decoration:none;font-weight:700;">Umbil</a>'
+        return '<a href="./" target="_self" title="Umbil Home" style="text-decoration:none;font-weight:700;">Umbil</a>'
 
 def hide_streamlit_sidebar():
     st.markdown(
@@ -26,21 +26,21 @@ def hide_streamlit_sidebar():
           /* Hide the default sidebar */
           section[data-testid="stSidebar"] { display: none !important; }
 
-          /* Extra top padding so the logo/nav never look cut off */
-          div.block-container { padding-top: 3.0rem; }
+          /* More top padding so logo/nav never look clipped */
+          div.block-container { padding-top: 3rem; }
 
-          /* Make page_link widgets sit closer together */
+          /* Optional: tighten spacing of page_link buttons */
           div[data-baseweb="button"] { margin-right: 0.25rem; }
         </style>
         """,
         unsafe_allow_html=True,
     )
 
-def _safe_page_link(target, label, icon=""):
+def _safe_page_link(target, label):
     try:
-        st.page_link(target, label=label, icon=icon or None)
+        st.page_link(target, label=label)
     except Exception:
-        if st.button(f"{icon} {label}"):
+        if st.button(label):
             try:
                 st.switch_page(target)
             except Exception:
@@ -49,20 +49,17 @@ def _safe_page_link(target, label, icon=""):
 def render_topbar(active="home"):
     hide_streamlit_sidebar()
 
-    # Three columns: big logo on the left, a wide spacer in the middle,
-    # a narrow right column for nav (so the buttons hug the right side).
-    # Adjust [2, 8, 3] if you want even further right: e.g. [2, 9, 2]
+    # layout: [logo] [big spacer] [right-aligned nav]
     col_logo, col_spacer, col_nav = st.columns([2, 8, 3], gap="small")
 
     with col_logo:
         st.markdown(_logo_html(), unsafe_allow_html=True)
 
     with col_nav:
-        # 3 mini-columns inside the right-most column for the three links
-        a, b, c = st.columns([0.5, 0.5, 0.5], gap="small")
+        a, b, c = st.columns([1, 1, 1], gap="small")
         with a:
-            _safe_page_link("pages/cpd.py", "CPD Log", "CPD Log🗂️")
+            _safe_page_link("pages/cpd.py", "📂")
         with b:
-            _safe_page_link("pages/pdp.py", "PDP Goals", "PDP Goals🎯")
+            _safe_page_link("pages/pdp.py", "🎯")
         with c:
-            _safe_page_link("pages/settings.py", "Settings", "Settings⚙️")
+            _safe_page_link("pages/settings.py", "⚙️")
