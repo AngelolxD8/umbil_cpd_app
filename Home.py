@@ -17,59 +17,6 @@ st.set_page_config(
     layout="centered",
     initial_sidebar_state="collapsed",
 )
-st.markdown("""
-    <style>
-        .splash {
-            position: fixed;
-            top: 0; left: 0;
-            width: 100%; height: 100%;
-            background: #0E1117;  /* dark background */
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-            color: white;
-            font-family: 'Segoe UI', sans-serif;
-            font-size: 2em;
-            z-index: 9999;
-            opacity: 1;
-            transition: opacity 0.8s ease;
-        }
-        .splash h1 {
-            font-size: 3em;
-            margin-bottom: 0.5em;
-            color: #2B6CB0;
-        }
-        .splash p {
-            font-size: 1.2em;
-            opacity: 0.8;
-        }
-        .splash.fade-out {
-            opacity: 0;
-            pointer-events: none;
-        }
-    </style>
-
-    <div class="splash" id="splash">
-        <h1>🧠 Umbil</h1>
-        <p>Clinical CPD Assistant is loading...</p>
-    </div>
-
-    <script>
-        const interval = setInterval(function() {
-            const appRoot = document.querySelector('.main');
-            if (appRoot) {
-                const splash = document.getElementById("splash");
-                if (splash) {
-                    splash.classList.add("fade-out");
-                    setTimeout(() => splash.remove(), 1000);
-                }
-                clearInterval(interval);
-            }
-        }, 100);
-    </script>
-""", unsafe_allow_html=True)
-
 render_topbar(active="home")  # top bar + hide sidebar
 
 # --- Load API key ---
