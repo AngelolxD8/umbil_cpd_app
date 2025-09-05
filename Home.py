@@ -4,9 +4,9 @@ from datetime import datetime
 from collections import Counter
 
 import pandas as pd
-import requests
 import streamlit as st
 from dotenv import load_dotenv
+from openai import OpenAI  # ✅ new import
 
 from ui import render_topbar
 from storage import load_cpd, save_cpd, load_pdp, save_pdp
@@ -19,64 +19,41 @@ st.set_page_config(
 )
 render_topbar(active="home")  # top bar + hide sidebar
 
-# Secrets / env (safe even if secrets.toml is missing)
-load_dotenv()  # read .env if present
-OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")  # 1) env / .env
-if not OPENROUTER_API_KEY:
+# --- Load API key ---
+def load_openai_key() -> str | None:
     try:
-        # 2) Streamlit secrets (only if a secrets.toml exists)
-        OPENROUTER_API_KEY = st.secrets["OPENROUTER_API_KEY"]
+        key = st.secrets["OPENAI_API_KEY"]  # Streamlit secrets if available
     except Exception:
-        OPENROUTER_API_KEY = None  # run without a key (shows placeholder answers)
+        key = None
+    if not key:
+        load_dotenv()
+        key = os.getenv("OPENAI_API_KEY")
+    return key.strip().strip('"').strip("'") if key else None
 
-# ---------- OpenRouter helper + request ----------
-def _app_referer() -> str:
-    # Use local dev URL unless you set APP_URL in your env
-    return os.getenv("APP_URL", "http://localhost:8501")
+OPENAI_API_KEY = load_openai_key()
+client = OpenAI(api_key=OPENAI_API_KEY) if OPENAI_API_KEY else None
 
-def get_openrouter_response(query: str) -> str:
-    if not OPENROUTER_API_KEY:
-        return "📘 Placeholder response (no OpenRouter key configured)."
-
-    url = "https://openrouter.ai/api/v1/chat/completions"
-    headers = {
-        "Authorization": f"Bearer {OPENROUTER_API_KEY.strip()}",
-        "Content-Type": "application/json",
-        "HTTP-Referer": _app_referer(),  # recommended by OpenRouter
-        "X-Title": "UmbilCPD",
-    }
-    payload = {
-        "model": "mistralai/mixtral-8x7b-instruct",
-        "messages": [
-            {
-                "role": "system",
-                "content": (
-                    "You are a clinical assistant for UK doctors. Use NICE, CKS, SIGN, and BNF "
-                    "to answer clinical questions clearly and accurately."
-                ),
-            },
-            {"role": "user", "content": query},
-        ],
-    }
+# --- Call OpenAI ---
+def get_openai_response(query: str) -> str:
+    if not client:
+        return f"📘 Placeholder response for:\n\n**{query}**\n\n(Connect OpenAI API to get real answers.)"
     try:
-        r = requests.post(url, headers=headers, json=payload, timeout=60)
-        if r.status_code == 200:
-            return r.json()["choices"][0]["message"]["content"]
-
-        if r.status_code == 401:
-            return (
-                "⚠️ OpenRouter returned 401 (unauthorized). Double-check that:\n"
-                "• The key is an **OpenRouter** key (starts with `sk-or-v1-`).\n"
-                "• It’s saved as `OPENROUTER_API_KEY` in `.env` or `.streamlit/secrets.toml` (no quotes/spaces).\n"
-                "• You restarted the app after editing `.env`.\n\n"
-                f"Server said: {r.text}"
-            )
-        return f"⚠️ Error: {r.status_code} – {r.text}"
+        r = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "You are a clinical assistant for UK doctors. Use NICE, CKS, SIGN, and BNF to answer clinical questions clearly and accurately.",
+                },
+                {"role": "user", "content": query},
+            ],
+            temperature=0.3,
+        )
+        return r.choices[0].message.content
     except Exception as e:
         return f"⚠️ Request failed: {e}"
-# --------------------------------------------------
 
-# Load persisted state
+# --- State ---
 if "cpd_log" not in st.session_state:
     st.session_state.cpd_log = load_cpd()
 if "pdp_goals" not in st.session_state:
@@ -95,11 +72,7 @@ with left_col:
     )
 
     if query:
-        ai_response = (
-            get_openrouter_response(query)
-            if OPENROUTER_API_KEY
-            else f"📘 Placeholder response for:\n\n**{query}**\n\n(Connect API to get real answers.)"
-        )
+        ai_response = get_openai_response(query)
 
         st.subheader("AI Response")
         st.code(ai_response, language="markdown")
