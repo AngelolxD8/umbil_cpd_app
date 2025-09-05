@@ -17,7 +17,6 @@ st.set_page_config(
     layout="centered",
     initial_sidebar_state="collapsed",
 )
-# --- Custom Umbil Splash Screen ---
 st.markdown("""
     <style>
         .splash {
@@ -33,30 +32,41 @@ st.markdown("""
             font-family: 'Segoe UI', sans-serif;
             font-size: 2em;
             z-index: 9999;
+            opacity: 1;
+            transition: opacity 0.8s ease;
         }
         .splash h1 {
             font-size: 3em;
             margin-bottom: 0.5em;
-            color: #2B6CB0; /* Umbil blue */
+            color: #2B6CB0;
         }
         .splash p {
             font-size: 1.2em;
             opacity: 0.8;
         }
+        .splash.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
     </style>
+
     <div class="splash" id="splash">
         <h1>🧠 Umbil</h1>
         <p>Clinical CPD Assistant is loading...</p>
     </div>
 
     <script>
-        // Hide splash after app fully loads
-        window.addEventListener('load', function() {
-            var splash = document.getElementById("splash");
-            if (splash) {
-                splash.style.display = "none";
+        const interval = setInterval(function() {
+            const appRoot = document.querySelector('.main');
+            if (appRoot) {
+                const splash = document.getElementById("splash");
+                if (splash) {
+                    splash.classList.add("fade-out");
+                    setTimeout(() => splash.remove(), 1000);
+                }
+                clearInterval(interval);
             }
-        });
+        }, 100);
     </script>
 """, unsafe_allow_html=True)
 
